@@ -1,0 +1,23 @@
+server {
+    listen ${PORT};
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    add_header Cross-Origin-Embedder-Policy "require-corp" always;
+    add_header Cross-Origin-Resource-Policy "same-origin" always;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~* \.(wasm|pck|js|png|html)$ {
+        add_header Cache-Control "public, max-age=3600";
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+        add_header Cross-Origin-Embedder-Policy "require-corp" always;
+        add_header Cross-Origin-Resource-Policy "same-origin" always;
+        try_files $uri =404;
+    }
+}

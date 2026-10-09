@@ -1,0 +1,51 @@
+name: Apply V21 web export
+
+on:
+  push:
+    paths:
+      - ".v21-patch/apply.trigger"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install zstd
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y zstd
+          fi
+
+      - name: Rebuild V21 PCK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .v21-patch/part*.b64 | tr -d '\n\r ' | base64 -d > /tmp/v21.pck.patch.zst
+          echo "ec978f98411c7db384e0b9ad5aa97f40ce1075cd7e7c5958dd79cf20a6da8dc0  /tmp/v21.pck.patch.zst" | sha256sum -c -
+          zstd -d --patch-from="VÉRTICE 5.pck" /tmp/v21.pck.patch.zst -o "/tmp/VÉRTICE 5.pck" -f
+          test "$(stat -c%s "/tmp/VÉRTICE 5.pck")" = "30941116"
+          echo "e2b3b94f1c595ec2db8dc207848be62ceb4ab614  /tmp/VÉRTICE 5.pck" | sha1sum -c -
+          mv "/tmp/VÉRTICE 5.pck" "VÉRTICE 5.pck"
+
+      - name: Commit V21 PCK
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "VÉRTICE 5.pck"
+          if git diff --cached --quiet; then
+            echo "V21 PCK already applied."
+            exit 0
+          fi
+          git commit -m "Update V21 web export PCK"
+          git push

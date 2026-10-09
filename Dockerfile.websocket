@@ -1,0 +1,31 @@
+FROM ubuntu:24.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG GODOT_VERSION=4.7.2
+ARG GODOT_ZIP=Godot_v4.7.2-stable_linux.x86_64.zip
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates wget unzip libfontconfig1 libx11-6 libxcursor1 libxinerama1 \
+    libxrandr2 libxi6 libgl1 libasound2t64 && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt
+RUN wget -q "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/${GODOT_ZIP}" -O godot.zip && \
+    unzip godot.zip && \
+    mv Godot_v4.7.2-stable_linux.x86_64 /usr/local/bin/godot && \
+    chmod +x /usr/local/bin/godot && \
+    rm godot.zip
+
+WORKDIR /app
+COPY server_project.zip.b64 /app/server_project.zip.b64
+RUN base64 -d /app/server_project.zip.b64 > /app/server_project.zip && \
+    mkdir -p /app/server_project && \
+    unzip -q /app/server_project.zip -d /app/server_project && \
+    rm /app/server_project.zip /app/server_project.zip.b64
+
+ENV PORT=10000
+ENV VERTICE_TRANSPORT=websocket
+
+EXPOSE 10000
+
+CMD ["bash", "-lc", "godot --headless --path /app/server_project -- --server --transport=websocket --port=${PORT}"]

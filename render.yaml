@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: vertice5-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+
+  - type: web
+    name: vertice5-ws
+    runtime: docker
+    dockerfilePath: ./Dockerfile.websocket
+    autoDeploy: true
+    envVars:
+      - key: VERTICE_TRANSPORT
+        value: websocket
